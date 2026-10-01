@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PanSwap - Cake pan conversion</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#241a1c; color:#f6ebe4; line-height:1.5; }
+  .wrap { max-width:640px; margin:0 auto; padding:26px 18px 60px; }
+  a { color:#f2a0b4; } h1 { font-size:28px; } h1 span { color:#f2a0b4; } .sub { color:#c4aaa6; margin:4px 0 18px; }
+  .card { background:#33262a; border-radius:14px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:13px; color:#c4aaa6; margin:10px 0 4px; }
+  input, select, textarea { width:100%; padding:11px; border-radius:9px; border:1px solid #574248; background:#241a1c; color:#f6ebe4; font-size:16px; font-family:inherit; }
+  textarea { min-height:120px; resize:vertical; }
+  .row { display:flex; gap:10px; } .row > div { flex:1; }
+  .big { font-size:44px; font-weight:800; color:#f2a0b4; } .lbl { font-size:13px; color:#c4aaa6; }
+  .note { font-size:14px; color:#e8d6cf; margin-top:10px; } h2 { font-size:17px; margin-bottom:8px; } .small { font-size:13px; color:#c4aaa6; }
+  pre { white-space:pre-wrap; font-family:inherit; font-size:15px; background:#241a1c; border-radius:9px; padding:12px; margin-top:8px; }
+  .warn { background:#3d2a20; border:1px solid #b9703f; color:#ffddc4; padding:12px; border-radius:10px; margin-top:12px; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pan<span>Swap</span></h1>
+  <div class="sub">The recipe says 8-inch round and you own a 9x13. Scale every ingredient by pan area.</div>
+  <div class="card">
+    <div class="row"><div><label for="from">Recipe calls for</label><select id="from"></select></div><div><label for="to">You have</label><select id="to"></select></div></div>
+    <label for="ing">Ingredients (one per line, optional)</label>
+    <textarea id="ing">2 cups flour
+1 1/2 cups sugar
+3 eggs
+1 tsp baking powder
+3/4 cup butter</textarea>
+  </div>
+  <div class="card" id="out"></div>
+  <div class="card"><h2>About this</h2><div class="small">The conversion factor is the area of the pan you have divided by the area of the pan the recipe uses, then every ingredient is multiplied by it. Matches the chart from <a href="https://www.americastestkitchen.com/articles/8002-cake-pan-sizes">America's Test Kitchen</a> (27 of its 30 cells exactly; into a 6-inch pan from 9-inch round, 8x8 or 9x9 it rounds 0.1 higher than the raw ratio). Keeping the same depth keeps the bake time about the same, but check early and use a toothpick. Fill pans about half to two-thirds full. Baking is chemistry, so odd ratios like 0.4 can be fiddly. <a href="index.html">About</a></div></div>
+</div>
+<script src="engine.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); };
+Object.keys(Pan.PANS).forEach(function (k) { ['from', 'to'].forEach(function (s) { var o = document.createElement('option'); o.value = k; o.textContent = Pan.PANS[k].name; $(s).appendChild(o); }); });
+$('from').value = 'r8'; $('to').value = 'b13';
+function render() {
+  var f = Pan.factor($('from').value, $('to').value), same = $('from').value === $('to').value, h = '';
+  h += '<div class="lbl">Multiply every ingredient by</div><div class="big" id="factor">' + (Math.round(f * 100) / 100).toFixed(2) + '</div><div class="lbl">' + Pan.PANS[$('to').value].area.toFixed(1) + ' sq in vs ' + Pan.PANS[$('from').value].area.toFixed(1) + ' sq in</div>';
+  if (same) h += '<div class="note">Same area, so no change.</div>';
+  else if (f > 1.5 || f < 0.5) h += '<div class="warn" id="big-warn">That is a big jump. Check bake time often, and consider two pans or a half batch instead.</div>';
+  h += '<div class="note" id="depth">If you did not scale, the batter would be about ' + Math.round(Pan.depthIfUnscaled(f) * 100) + '% as deep as the recipe intends.</div>';
+  var lines = $('ing').value.split('\n').filter(function (l) { return l.trim(); });
+  if (lines.length) h += '<pre id="scaled">' + lines.map(function (l) { return Pan.scaleLine(l, f).text; }).join('\n').replace(/</g, '&lt;') + '</pre>';
+  $('out').innerHTML = h;
+}
+['from', 'to', 'ing'].forEach(function (i) { $(i).oninput = render; $(i).onchange = render; });
+render();
+</script>
+</body>
+</html>
